@@ -1,0 +1,26 @@
+{
+    "name": "sui-nft-scraper",
+    "version": "1.0.0",
+    "description": "Reddit and X scraper for SUI blockchain and NFT content",
+    "type": "module",
+    "scripts": {
+        "start": "python scraper/main.py",
+        "start:once": "python scraper/main.py --once",
+        "export": "python scraper/exporter.py --all",
+        "export:stats": "python scraper/exporter.py --stats",
+        "setup": "bash scraper/setup.sh",
+        "logs": "tail -f scraper/logs/scraper.log"
+    },
+    "keywords": [
+        "sui",
+        "nft",
+        "scraper",
+        "reddit",
+        "twitter"
+    ],
+    "author": "",
+    "license": "MIT",
+    "dependencies": {
+        "child_process": "^1.0.2"
+    }
+}

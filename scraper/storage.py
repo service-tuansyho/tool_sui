@@ -35,10 +35,15 @@ class MongoDBStorage:
     def save_reddit_post(self, post_data):
         """Save Reddit post to MongoDB"""
         try:
+            content = post_data.get("content", "").strip()
+            if not content:
+                logger.info(f"Skipping Reddit post {post_data.get('id')} - no content")
+                return False
+            
             post = {
                 "post_id": post_data.get("id"),
                 "title": post_data.get("title"),
-                "content": post_data.get("content"),
+                "content": content,
                 "author": post_data.get("author"),
                 "subreddit": post_data.get("subreddit"),
                 "url": post_data.get("url"),
@@ -59,10 +64,15 @@ class MongoDBStorage:
     def save_twitter_post(self, tweet_data):
         """Save Twitter post to MongoDB"""
         try:
+            text = tweet_data.get("text", "").strip()
+            if not text:
+                logger.info(f"Skipping Twitter post {tweet_data.get('id')} - no content")
+                return False
+            
             tweet = {
                 "tweet_id": tweet_data.get("id"),
                 "author": tweet_data.get("author_id"),
-                "text": tweet_data.get("text"),
+                "text": text,
                 "likes": tweet_data.get("public_metrics", {}).get("like_count", 0),
                 "retweets": tweet_data.get("public_metrics", {}).get("retweet_count", 0),
                 "replies": tweet_data.get("public_metrics", {}).get("reply_count", 0),

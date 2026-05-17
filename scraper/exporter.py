@@ -84,14 +84,12 @@ class DataExporter:
             return None
 
     def export_all(self):
-        """Export all collections"""
-        logger.info("Exporting all collections...")
+        """Export all posts (combined Reddit and Twitter data)"""
+        logger.info("Exporting all posts...")
         
         results = {
-            "reddit_posts_json": self.export_to_json("reddit_posts"),
-            "reddit_posts_csv": self.export_to_csv("reddit_posts"),
-            "twitter_posts_json": self.export_to_json("twitter_posts"),
-            "twitter_posts_csv": self.export_to_csv("twitter_posts"),
+            "posts_json": self.export_to_json("posts"),
+            "posts_csv": self.export_to_csv("posts"),
         }
         
         logger.info("All exports completed!")
@@ -100,22 +98,19 @@ class DataExporter:
     def get_statistics(self):
         """Get statistics about collected data"""
         try:
-            reddit_count = self.db.reddit_posts.count_documents({})
-            twitter_count = self.db.twitter_posts.count_documents({})
+            total_count = self.db.posts.count_documents({})
+            reddit_count = self.db.posts.count_documents({"source": "reddit"})
+            twitter_count = self.db.posts.count_documents({"source": "twitter"})
             
-            reddit_latest = self.db.reddit_posts.find_one(
-                sort=[("created_at", -1)]
-            )
-            twitter_latest = self.db.twitter_posts.find_one(
+            latest = self.db.posts.find_one(
                 sort=[("created_at", -1)]
             )
             
             stats = {
-                "total_reddit_posts": reddit_count,
-                "total_twitter_posts": twitter_count,
-                "total_items": reddit_count + twitter_count,
-                "latest_reddit": reddit_latest["created_at"] if reddit_latest else None,
-                "latest_twitter": twitter_latest["created_at"] if twitter_latest else None,
+                "total_posts": total_count,
+                "reddit_posts": reddit_count,
+                "twitter_posts": twitter_count,
+                "latest_post": latest["created_at"] if latest else None,
             }
             
             logger.info(f"Statistics: {stats}")
@@ -137,9 +132,9 @@ if __name__ == "__main__":
     
     if len(sys.argv) > 1:
         if sys.argv[1] == "--json":
-            exporter.export_to_json(sys.argv[2] if len(sys.argv) > 2 else "reddit_posts")
+            exporter.export_to_json(sys.argv[2] if len(sys.argv) > 2 else "posts")
         elif sys.argv[1] == "--csv":
-            exporter.export_to_csv(sys.argv[2] if len(sys.argv) > 2 else "reddit_posts")
+            exporter.export_to_csv(sys.argv[2] if len(sys.argv) > 2 else "posts")
         elif sys.argv[1] == "--all":
             exporter.export_all()
         elif sys.argv[1] == "--stats":

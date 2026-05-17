@@ -12,13 +12,13 @@ def summarize_posts(limit=100, index=None, post_id=None):
     summarizer = AISummarizer()
 
     if post_id is not None:
-        post = storage.get_reddit_post_by_id(post_id)
+        post = storage.get_post_by_id(post_id)
         posts = [post] if post else []
     elif index is not None:
-        post = storage.get_reddit_post_by_index(index)
+        post = storage.get_post_by_index(index, source="reddit")
         posts = [post] if post else []
     else:
-        posts = storage.get_reddit_posts(limit=limit)
+        posts = storage.get_posts(source="reddit", limit=limit)
 
     logger.info(f'Loaded {len(posts)} posts from MongoDB')
 
@@ -36,7 +36,7 @@ def summarize_posts(limit=100, index=None, post_id=None):
         try:
             rewrite = summarizer.rewrite_text(content)
             if rewrite:
-                storage.update_reddit_post_rewrite(post['post_id'], rewrite)
+                storage.update_post_rewrite(post['post_id'], rewrite)
                 updated += 1
                 logger.info(f"Rewrote post {post['post_id']}")
             else:

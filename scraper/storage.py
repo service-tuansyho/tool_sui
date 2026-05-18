@@ -1,4 +1,5 @@
 import logging
+import re
 from datetime import datetime
 from pymongo import MongoClient, ASCENDING
 from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError
@@ -23,11 +24,35 @@ class MongoDBStorage:
         """Create indexes for better query performance"""
         # Posts collection
         self.db.posts.create_index([("post_id", ASCENDING)], unique=True)
+        self.db.posts.create_index([("slug", ASCENDING)], unique=True)
         self.db.posts.create_index([("created_at", ASCENDING)])
         self.db.posts.create_index([("source", ASCENDING)])
         self.db.posts.create_index([("source", ASCENDING), ("created_at", ASCENDING)])
         
         logger.info("Indexes created successfully")
+
+    def _slugify(self, text: str) -> str:
+        """Convert a title or text into a URL-friendly slug."""
+        if not text:
+            return ""
+
+        slug = text.strip().lower()
+        slug = re.sub(r"[^\w\s-]", "", slug)
+        slug = re.sub(r"[\s_-]+", "-", slug)
+        slug = re.sub(r"^-+|-+$", "", slug)
+        return slug
+
+    def _generate_unique_slug(self, text: str, fallback: str) -> str:
+        """Generate a unique slug within the posts collection."""
+        base_slug = self._slugify(text) or self._slugify(fallback) or "post"
+        slug = base_slug
+        counter = 1
+
+        while self.db.posts.find_one({"slug": slug}):
+            slug = f"{base_slug}-{counter}"
+            counter += 1
+
+        return slug
 
     def save_post(self, post_data):
         """Save post (Reddit or Twitter) to MongoDB with source field"""
@@ -41,10 +66,12 @@ class MongoDBStorage:
                     logger.info(f"Skipping Reddit post {post_data.get('id')} - no content")
                     return False
                 
+                slug = self._generate_unique_slug(post_data.get("title"), post_data.get("id"))
                 post = {
                     "post_id": post_data.get("id"),
                     "source": "reddit",
                     "title": post_data.get("title"),
+                    "slug": slug,
                     "content": content,
                     "author": post_data.get("author"),
                     "subreddit": post_data.get("subreddit"),
@@ -63,9 +90,11 @@ class MongoDBStorage:
                     logger.info(f"Skipping Twitter post {post_data.get('id')} - no content")
                     return False
                 
+                slug = self._generate_unique_slug(post_data.get("title") or text, post_data.get("id"))
                 post = {
                     "post_id": post_data.get("id"),
                     "source": "twitter",
+                    "slug": slug,
                     "author": post_data.get("author_id"),
                     "content": text,
                     "likes": post_data.get("public_metrics", {}).get("like_count", 0),
